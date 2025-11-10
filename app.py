@@ -1,18 +1,9 @@
-"""
-Aplicação Streamlit para classificação de resíduos sólidos.
-Interface com páginas: Introdução e Classificar.
-"""
-
 import streamlit as st
 import cv2
 import numpy as np
-from PIL import Image
-import io
 from src.feature_extraction import FeatureExtractor
 from src.classifier import WasteClassifier
 
-
-# Configuração da página
 st.set_page_config(
     page_title="GreenTrash - Classificação Inteligente",
     page_icon="♻️",
@@ -20,7 +11,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS customizado
 st.markdown("""
 <style>
     .main-header {
@@ -80,7 +70,6 @@ st.markdown("""
 
 
 def initialize_session_state():
-    """Inicializa variáveis de sessão."""
     if 'extractor' not in st.session_state:
         st.session_state.extractor = FeatureExtractor()
     if 'classifier' not in st.session_state:
@@ -90,13 +79,9 @@ def initialize_session_state():
 
 
 def render_introduction():
-    """Renderiza a página de Introdução."""
     st.markdown('<div class="main-header">♻️ GreenTrash - Classificação Inteligente</div>', 
                 unsafe_allow_html=True)
-    
     st.markdown("---")
-    
-    # Sobre o projeto
     st.markdown('<div class="sub-header">📖 Sobre o Projeto</div>', unsafe_allow_html=True)
     st.markdown("""
     <div class="info-box">
@@ -110,7 +95,6 @@ def render_introduction():
     </div>
     """, unsafe_allow_html=True)
     
-    # Como funciona
     st.markdown('<div class="sub-header">🤖 Como Funciona</div>', unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
@@ -140,7 +124,6 @@ def render_introduction():
         - Orientações de descarte apropriado
         """)
     
-    # Classes de resíduos
     st.markdown('<div class="sub-header">🗂️ Classes de Resíduos</div>', unsafe_allow_html=True)
     
     col1, col2, col3, col4 = st.columns(4)
@@ -181,7 +164,6 @@ def render_introduction():
         </div>
         """, unsafe_allow_html=True)
     
-    # Ética e LGPD
     st.markdown('<div class="sub-header">🔒 Ética e Privacidade (LGPD)</div>', unsafe_allow_html=True)
     st.markdown("""
     <div class="info-box">
@@ -198,7 +180,6 @@ def render_introduction():
     </div>
     """, unsafe_allow_html=True)
     
-    # Tecnologias
     st.markdown('<div class="sub-header">🛠️ Tecnologias Utilizadas</div>', unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
@@ -223,7 +204,6 @@ def render_introduction():
         - Fallback textual quando necessário
         """)
     
-    # Instruções de uso
     st.markdown('<div class="sub-header">📝 Como Usar</div>', unsafe_allow_html=True)
     st.markdown("""
     <div class="info-box">
@@ -242,12 +222,9 @@ def render_introduction():
 
 
 def render_classifier():
-    """Renderiza a página de Classificação."""
     st.markdown('<div class="main-header">🔍 Classificar Resíduo</div>', unsafe_allow_html=True)
-    
     st.markdown("---")
     
-    # Verificar se modelo está disponível
     if st.session_state.classifier.model is None:
         st.markdown("""
         <div class="warning-box">
@@ -258,7 +235,6 @@ def render_classifier():
         </div>
         """, unsafe_allow_html=True)
     
-    # Seleção do método de entrada
     st.markdown('<div class="sub-header">📥 Método de Entrada</div>', unsafe_allow_html=True)
     
     input_method = st.radio(
@@ -270,7 +246,6 @@ def render_classifier():
     image = None
     text = ""
     
-    # Interface para imagem
     if input_method == "📸 Imagem":
         col1, col2 = st.columns([1, 1])
         
@@ -283,12 +258,10 @@ def render_classifier():
             
             if uploaded_file is not None:
                 try:
-                    # Ler imagem
                     file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
                     image = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
                     
                     if image is not None and image.size > 0:
-                        # Mostrar preview
                         st.image(cv2.cvtColor(image, cv2.COLOR_BGR2RGB), 
                                 caption="Imagem carregada", 
                                 use_container_width=True)
@@ -307,7 +280,6 @@ def render_classifier():
                 help="Descrição opcional. O sistema prioriza análise visual da imagem."
             )
     
-    # Interface para texto apenas
     else:
         text = st.text_area(
             "Descreva o resíduo",
@@ -321,46 +293,33 @@ def render_classifier():
     
     st.markdown("---")
     
-    # Botão de classificação
     if st.button("🔍 Classificar Resíduo", use_container_width=True):
-        # Validar entrada
         if image is None and not text.strip():
             st.error("❌ Por favor, forneça uma imagem ou descrição do resíduo")
             return
         
-        # Processar classificação
         with st.spinner("🔄 Analisando resíduo..."):
             try:
-                # Extrair features (priorizando visuais quando há imagem)
                 if image is not None:
-                    # Priorizar features visuais
                     visual_features = st.session_state.extractor.extract_visual_features(image)
                     text_features = st.session_state.extractor.extract_text_features(text)
-                    # Combinar: 118 visuais + 4 textuais (96.7% visual, 3.3% textual)
                     features = np.concatenate([visual_features, text_features])
                 else:
-                    # Apenas texto
-                    visual_features = np.zeros(118)  # Features visuais vazias
+                    visual_features = np.zeros(118)
                     text_features = st.session_state.extractor.extract_text_features(text)
                     features = np.concatenate([visual_features, text_features])
                 
-                # Classificar
                 result = st.session_state.classifier.predict(features)
-                
-                # Armazenar resultado
                 st.session_state.last_result = result
                 
             except Exception as e:
                 st.error(f"❌ Erro ao classificar: {str(e)}")
                 return
     
-    # Mostrar resultado
     if st.session_state.last_result is not None:
         result = st.session_state.last_result
-        
         st.markdown('<div class="sub-header">📊 Resultado da Classificação</div>', unsafe_allow_html=True)
         
-        # Box colorido baseado na classe
         class_colors = {
             'Orgânico': '#4CAF50',
             'Reciclável': '#2196F3',
@@ -378,7 +337,6 @@ def render_classifier():
         classe = result['classe']
         confianca = result['confianca']
         
-        # Resultado principal
         st.markdown(f"""
         <div class="result-box" style="border-left: 6px solid {class_colors.get(classe, '#757575')}">
             <h2 style="color: {class_colors.get(classe, '#757575')}; margin-top: 0;">
@@ -391,7 +349,6 @@ def render_classifier():
         </div>
         """, unsafe_allow_html=True)
         
-        # Probabilidades
         col1, col2 = st.columns([1, 1])
         
         with col1:
@@ -407,17 +364,13 @@ def render_classifier():
             </div>
             """, unsafe_allow_html=True)
         
-        # Informações adicionais
         with st.expander("ℹ️ Informações Técnicas"):
             st.json(result)
 
 
 def main():
-    """Função principal da aplicação."""
-    # Inicializar sessão
     initialize_session_state()
     
-    # Sidebar
     with st.sidebar:
         st.image("https://img.icons8.com/color/96/000000/recycle-sign.png", width=100)
         st.markdown("# GreenTrash")
@@ -445,7 +398,6 @@ def main():
         st.markdown("**Versão:** 1.0.0")
         st.markdown("**Tecnologia:** Python + ML")
     
-    # Renderizar página selecionada
     if page == "📖 Introdução":
         render_introduction()
     else:

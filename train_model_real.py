@@ -1,8 +1,3 @@
-"""
-Script para treinar o modelo usando imagens reais da pasta assets/images.
-Prioriza features visuais sobre textuais para maior acurácia.
-"""
-
 import os
 import cv2
 import numpy as np
@@ -13,16 +8,6 @@ from src.classifier import WasteClassifier
 
 
 def load_images_from_folder(folder_path, class_name):
-    """
-    Carrega todas as imagens de uma pasta.
-    
-    Args:
-        folder_path: Caminho da pasta
-        class_name: Nome da classe
-        
-    Returns:
-        Lista de tuplas (imagem, classe)
-    """
     images = []
     if not os.path.exists(folder_path):
         print(f"⚠️ Pasta não encontrada: {folder_path}")
@@ -34,7 +19,6 @@ def load_images_from_folder(folder_path, class_name):
         if filename.lower().endswith(valid_extensions):
             file_path = os.path.join(folder_path, filename)
             try:
-                # Ler imagem
                 img = cv2.imread(file_path)
                 if img is not None:
                     images.append((img, class_name))
@@ -48,15 +32,10 @@ def load_images_from_folder(folder_path, class_name):
 
 
 def train_model_with_real_images():
-    """
-    Treina o modelo usando imagens reais da pasta assets/images.
-    Prioriza features visuais (peso maior) sobre textuais.
-    """
     print("="*60)
     print("TREINAMENTO COM IMAGENS REAIS - GreenTrash")
     print("="*60)
     
-    # Mapeamento de pastas para classes
     class_mapping = {
         'organic': 'Orgânico',
         'recyclable': 'Reciclável',
@@ -64,14 +43,10 @@ def train_model_with_real_images():
         'dangerous': 'Perigoso'
     }
     
-    # Garantir que estamos no diretório correto
     script_dir = os.path.dirname(os.path.abspath(__file__))
     os.chdir(script_dir)
-    
-    # Caminho base
     base_path = 'assets/images'
     
-    # Carregar todas as imagens
     print("\n1. Carregando imagens reais...")
     all_images = []
     
@@ -88,24 +63,14 @@ def train_model_with_real_images():
     
     print(f"\n✅ Total de imagens carregadas: {len(all_images)}")
     
-    # Extrair features
     print("\n2. Extraindo features das imagens...")
-    print("   Priorizando features visuais sobre textuais...")
-    
     extractor = FeatureExtractor()
     X = []
     y = []
     
     for img, class_name in all_images:
-        # Extrair features visuais (prioridade)
         visual_features = extractor.extract_visual_features(img)
-        
-        # Para imagens reais, usar texto vazio (priorizar visual)
-        # Ou extrair texto mínimo baseado no nome da pasta
-        text_features = extractor.extract_text_features("")  # Vazio para priorizar visual
-        
-        # Combinar features (visuais têm mais peso implícito por serem mais numerosas)
-        # 118 features visuais vs 4 textuais = 96.7% visual, 3.3% textual
+        text_features = extractor.extract_text_features("")
         combined_features = np.concatenate([visual_features, text_features])
         
         X.append(combined_features)
@@ -122,10 +87,8 @@ def train_model_with_real_images():
         count = np.sum(y == class_name)
         print(f"    • {class_name}: {count} imagens")
     
-    # Dividir em treino e teste
     print("\n3. Dividindo dados em treino e teste (80/20)...")
     if len(X) < 10:
-        # Se muito poucas imagens, usar tudo para treino
         X_train, X_test = X, X
         y_train, y_test = y, y
         print("  ⚠️ Poucas imagens. Usando todas para treino e teste.")
@@ -137,13 +100,10 @@ def train_model_with_real_images():
     print(f"  - Amostras de treino: {len(X_train)}")
     print(f"  - Amostras de teste: {len(X_test)}")
     
-    # Treinar modelo
     print("\n4. Treinando Random Forest...")
-    print("   Modelo prioriza features visuais (118 features) sobre textuais (4 features)")
     classifier = WasteClassifier()
     classifier.train(X_train, y_train)
     
-    # Avaliar no conjunto de teste
     if len(X_test) > 0:
         print("\n5. Avaliando modelo no conjunto de teste...")
         predictions = []
@@ -151,26 +111,22 @@ def train_model_with_real_images():
             result = classifier.predict(features)
             predictions.append(result['classe'])
         
-        # Relatório de classificação
         print("\n" + "="*60)
         print("RELATÓRIO DE CLASSIFICAÇÃO")
         print("="*60)
         print(classification_report(y_test, predictions, zero_division=0))
         
-        # Matriz de confusão
         print("\n" + "="*60)
         print("MATRIZ DE CONFUSÃO")
         print("="*60)
         cm = confusion_matrix(y_test, predictions, labels=classifier.CLASSES)
         
-        # Imprimir matriz formatada
         print("\n" + " "*15 + "Predito")
         print(" "*10 + "  ".join(f"{c[:4]:>6}" for c in classifier.CLASSES))
         print("Real")
         for i, class_name in enumerate(classifier.CLASSES):
             print(f"{class_name[:10]:>10} " + "  ".join(f"{cm[i,j]:>6}" for j in range(len(classifier.CLASSES))))
     
-    # Salvar modelo
     print("\n6. Salvando modelo...")
     classifier.save_model()
     
@@ -178,8 +134,6 @@ def train_model_with_real_images():
     print("✓ Treinamento concluído com sucesso!")
     print("="*60)
     print(f"\nModelo salvo em: {classifier.model_path}")
-    print("\n📊 O modelo foi treinado priorizando features VISUAIS sobre textuais.")
-    print("   Isso garante maior acurácia baseada nas imagens reais.")
     print("\nExecute 'streamlit run app.py' para usar a aplicação.")
 
 

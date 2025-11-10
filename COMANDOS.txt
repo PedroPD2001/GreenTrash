@@ -1,0 +1,42 @@
+COMANDOS PARA EXECUTAR O GREENTRASH
+=====================================
+
+OPÇÃO 1: Script Automatizado (Recomendado)
+-------------------------------------------
+Windows:
+    INICIAR.bat
+
+Linux/Mac:
+    chmod +x INICIAR.bat
+    ./INICIAR.bat
+
+
+OPÇÃO 2: Comando Direto
+------------------------
+streamlit run app.py
+
+
+OPÇÃO 3: Comando com Porta Específica
+--------------------------------------
+streamlit run app.py --server.port 8501
+
+
+OPÇÃO 4: Python Direto
+-----------------------
+py -m streamlit run app.py
+
+
+TREINAR MODELO (Antes de usar)
+-------------------------------
+py train_model_real.py
+
+
+ACESSAR APLICAÇÃO
+-----------------
+http://localhost:8501
+
+
+PARAR SERVIDOR
+--------------
+Pressione Ctrl+C no terminal
+
