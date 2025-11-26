@@ -1,7 +1,11 @@
 import cv2
 import numpy as np
-from skimage.feature import local_binary_pattern, graycomatrix, graycoprops
-from skimage import img_as_ubyte
+try:
+    from skimage.feature import local_binary_pattern, graycomatrix, graycoprops
+    from skimage import img_as_ubyte
+    _SKIMAGE_AVAILABLE = True
+except Exception:
+    _SKIMAGE_AVAILABLE = False
 
 
 class FeatureExtractor:
@@ -84,6 +88,8 @@ class FeatureExtractor:
         return np.array(stats)
     
     def _extract_lbp(self, image):
+        if not _SKIMAGE_AVAILABLE:
+            return np.zeros(10)
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         lbp = local_binary_pattern(gray, self.lbp_n_points, self.lbp_radius, method='uniform')
         n_bins = 10
@@ -91,6 +97,8 @@ class FeatureExtractor:
         return hist
     
     def _extract_glcm(self, image):
+        if not _SKIMAGE_AVAILABLE:
+            return np.zeros(4)
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         gray = img_as_ubyte(gray // 32)
         
