@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 from src.feature_extraction import FeatureExtractor
 from src.classifier import WasteClassifier
+from src.feedback_collector import FeedbackCollector
 
 st.set_page_config(
     page_title="GreenTrash - Classificação Inteligente",
@@ -76,6 +77,12 @@ def initialize_session_state():
         st.session_state.classifier = WasteClassifier()
     if 'last_result' not in st.session_state:
         st.session_state.last_result = None
+    if 'last_features' not in st.session_state:
+        st.session_state.last_features = None
+    if 'last_text' not in st.session_state:
+        st.session_state.last_text = ""
+    if 'feedback_collector' not in st.session_state:
+        st.session_state.feedback_collector = FeedbackCollector()
 
 
 def render_introduction():
@@ -309,8 +316,10 @@ def render_classifier():
                     text_features = st.session_state.extractor.extract_text_features(text)
                     features = np.concatenate([visual_features, text_features])
                 
-                result = st.session_state.classifier.predict(features)
+                result = st.session_state.classifier.predict(features, text=text)
                 st.session_state.last_result = result
+                st.session_state.last_features = features
+                st.session_state.last_text = text
                 
             except Exception as e:
                 st.error(f"❌ Erro ao classificar: {str(e)}")
@@ -366,6 +375,66 @@ def render_classifier():
         
         with st.expander("ℹ️ Informações Técnicas"):
             st.json(result)
+        
+        if result.get('needs_feedback', False):
+            st.markdown("---")
+            st.markdown("""
+            <div class="warning-box">
+            <h4>⚠️ Classificação com Baixa Confiança</h4>
+            <p>Por favor, confirme se a classificação está correta para melhorar o modelo.</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            feedback_col = st.columns(5)
+            with feedback_col[0]:
+                if st.button("✓ Correto", key="feedback_correct", use_container_width=True):
+                    st.success("Obrigado pelo feedback!")
+                    st.session_state.last_result = None
+                    st.rerun()
+            with feedback_col[1]:
+                if st.button("🌱 Orgânico", key="feedback_organic", use_container_width=True):
+                    st.session_state.feedback_collector.save_feedback(
+                        st.session_state.last_features,
+                        result['classe'],
+                        'Orgânico',
+                        st.session_state.last_text
+                    )
+                    st.success("Feedback registrado!")
+                    st.session_state.last_result = None
+                    st.rerun()
+            with feedback_col[2]:
+                if st.button("♻️ Reciclável", key="feedback_recyclable", use_container_width=True):
+                    st.session_state.feedback_collector.save_feedback(
+                        st.session_state.last_features,
+                        result['classe'],
+                        'Reciclável',
+                        st.session_state.last_text
+                    )
+                    st.success("Feedback registrado!")
+                    st.session_state.last_result = None
+                    st.rerun()
+            with feedback_col[3]:
+                if st.button("🗑️ Rejeito", key="feedback_reject", use_container_width=True):
+                    st.session_state.feedback_collector.save_feedback(
+                        st.session_state.last_features,
+                        result['classe'],
+                        'Rejeito',
+                        st.session_state.last_text
+                    )
+                    st.success("Feedback registrado!")
+                    st.session_state.last_result = None
+                    st.rerun()
+            with feedback_col[4]:
+                if st.button("⚠️ Perigoso", key="feedback_dangerous", use_container_width=True):
+                    st.session_state.feedback_collector.save_feedback(
+                        st.session_state.last_features,
+                        result['classe'],
+                        'Perigoso',
+                        st.session_state.last_text
+                    )
+                    st.success("Feedback registrado!")
+                    st.session_state.last_result = None
+                    st.rerun()
 
 
 def main():

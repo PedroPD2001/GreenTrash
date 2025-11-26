@@ -16,7 +16,9 @@ class FeatureExtractor:
             'papel', 'papelão', 'plástico', 'garrafa', 'pet', 'metal',
             'alumínio', 'lata', 'vidro', 'caixa', 'embalagem', 'revista',
             'jornal', 'cartolina', 'pote', 'sacola', 'reciclagem', 'reciclável',
-            'tetra pak', 'aço', 'ferro', 'cobre', 'papelão ondulado'
+            'tetra pak', 'aço', 'ferro', 'cobre', 'papelão ondulado',
+            'cano', 'canos', 'tubo', 'tubos', 'pvc', 'conduíte', 'conduite',
+            'encanamento', 'conexões', 'conexoes', 'esgoto', 'tubulação', 'tubulacao'
         ],
         'Rejeito': [
             'papel higiênico', 'absorvente', 'fralda', 'guardanapo sujo',
